@@ -31,7 +31,6 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 to-white p-4">
       <div className="w-full max-w-sm">
-        {/* Logo / title */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 shadow-lg">
             <span className="text-2xl font-bold text-white">R$</span>
@@ -42,9 +41,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="card space-y-4">
           {error && (
-            <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
+            <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
           )}
 
           <div>

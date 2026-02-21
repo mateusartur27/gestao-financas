@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Navbar from '@/components/Navbar'
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const [checking, setChecking] = useState(true)
 

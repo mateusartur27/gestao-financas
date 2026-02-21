@@ -13,8 +13,11 @@ export function useReceivables(yearMonth: string) {
   const fetchMonth = useCallback(async (ym: string) => {
     setLoading(true)
     setError(null)
+    const [year, month] = ym.split('-').map(Number)
     const from = `${ym}-01`
-    const to   = `${ym}-31`
+    // Last day of the month — day 0 of next month
+    const lastDay = new Date(year, month, 0).getDate()
+    const to = `${ym}-${String(lastDay).padStart(2, '0')}`
     const { data, error } = await supabase
       .from('receivables')
       .select('*')
