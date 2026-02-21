@@ -32,7 +32,7 @@ export default function DashboardView() {
 
   const [range, setRange]           = useState(defaultRange)
   const [statusFilter, setStatus]   = useState<Set<Status>>(new Set(['a_vencer', 'vencido', 'pago']))
-  const [sortDir, setSortDir]       = useState<SortDir>('asc')
+  const [sortDir, setSortDir]       = useState<SortDir>('desc')
 
   useEffect(() => {
     try {
@@ -128,7 +128,7 @@ export default function DashboardView() {
               onChange={e => handleRange('end', e.target.value)} />
           </div>
           <button onClick={handleReset} className="btn-secondary flex items-center gap-1.5 text-xs">
-            <RotateCcw size={13} /> Voltar ao padrao
+            <RotateCcw size={13} /> Limpar
           </button>
         </div>
 
