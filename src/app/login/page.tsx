@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
 
@@ -25,7 +24,7 @@ export default function LoginPage() {
       setLoading(false)
       return
     }
-    router.replace('/dashboard')
+    router.replace('/')
   }
 
   return (
@@ -85,9 +84,9 @@ export default function LoginPage() {
 
         <p className="mt-4 text-center text-sm text-gray-600">
           Não tem conta?{' '}
-          <Link href="/register" className="font-semibold text-brand-600 hover:underline">
+          <a href="/register" className="font-semibold text-brand-600 hover:underline">
             Criar conta
-          </Link>
+          </a>
         </p>
       </div>
     </div>

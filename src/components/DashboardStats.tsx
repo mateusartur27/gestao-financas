@@ -1,13 +1,13 @@
 'use client'
 
 import { formatCurrency } from '@/lib/utils'
-import { TrendingUp, Clock, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { TrendingUp, Clock, AlertCircle, CheckCircle2, Percent } from 'lucide-react'
 import type { DashboardSummary } from '@/types'
 
 interface Props { summary: DashboardSummary }
 
 export default function DashboardStats({ summary }: Props) {
-  const { totalMonth, receivedMonth, pendingMonth, overdueTotal, overdueCount } = summary
+  const { totalMonth, receivedMonth, pendingMonth, overdueTotal, overdueCount, tenPercent } = summary
 
   const stats = [
     {
@@ -16,6 +16,13 @@ export default function DashboardStats({ summary }: Props) {
       icon: TrendingUp,
       color: 'text-brand-600',
       bg: 'bg-brand-50',
+    },
+    {
+      label: '10% do mês',
+      value: formatCurrency(tenPercent),
+      icon: Percent,
+      color: 'text-purple-600',
+      bg: 'bg-purple-50',
     },
     {
       label: 'Já recebido',
@@ -41,7 +48,7 @@ export default function DashboardStats({ summary }: Props) {
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
       {stats.map(({ label, value, icon: Icon, color, bg }) => (
         <div key={label} className="card">
           <div className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl ${bg}`}>

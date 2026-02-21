@@ -14,6 +14,10 @@ export type NewReceivable = Omit<Receivable, 'id' | 'user_id' | 'created_at' | '
 
 export type UpdateReceivable = Partial<NewReceivable>
 
+export type AppTab = 'recebimentos' | 'dashboard'
+
+export type DateMode = 'due_date' | 'paid_at'
+
 export interface MonthlyStats {
   month: string  // YYYY-MM
   label: string  // e.g. "Jan/25"
@@ -28,4 +32,5 @@ export interface DashboardSummary {
   pendingMonth: number
   overdueTotal: number
   overdueCount: number
+  tenPercent: number
 }

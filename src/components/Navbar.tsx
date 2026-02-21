@@ -1,18 +1,22 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { LayoutDashboard, ListChecks, LogOut } from 'lucide-react'
+import type { AppTab } from '@/types'
 
-const navItems = [
-  { href: '/dashboard',     label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/recebimentos',  label: 'Recebimentos', icon: ListChecks },
+const navItems: { tab: AppTab; label: string; icon: typeof LayoutDashboard }[] = [
+  { tab: 'recebimentos', label: 'Recebimentos', icon: ListChecks },
+  { tab: 'dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
 ]
 
-export default function Navbar() {
-  const pathname = usePathname()
-  const router   = useRouter()
+interface Props {
+  currentTab: AppTab
+  onTabChange: (tab: AppTab) => void
+}
+
+export default function Navbar({ currentTab, onTabChange }: Props) {
+  const router = useRouter()
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -24,23 +28,23 @@ export default function Navbar() {
     <header className="sticky top-0 z-30 border-b border-gray-100 bg-white/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
         {/* Brand */}
-        <Link href="/dashboard" className="flex items-center gap-2.5">
+        <button onClick={() => onTabChange('recebimentos')} className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600">
             <span className="text-sm font-bold text-white">R$</span>
           </div>
           <span className="hidden text-sm font-semibold text-gray-900 sm:block">
             Gestão de Finanças
           </span>
-        </Link>
+        </button>
 
-        {/* Nav links */}
+        {/* Tab nav */}
         <nav className="flex items-center gap-1">
-          {navItems.map(({ href, label, icon: Icon }) => {
-            const active = pathname.startsWith(href)
+          {navItems.map(({ tab, label, icon: Icon }) => {
+            const active = currentTab === tab
             return (
-              <Link
-                key={href}
-                href={href}
+              <button
+                key={tab}
+                onClick={() => onTabChange(tab)}
                 className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition ${
                   active
                     ? 'bg-brand-50 text-brand-700'
@@ -49,7 +53,7 @@ export default function Navbar() {
               >
                 <Icon size={16} />
                 <span className="hidden sm:block">{label}</span>
-              </Link>
+              </button>
             )
           })}
         </nav>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { toYearMonth } from '@/lib/utils'
 import type { Receivable, NewReceivable, UpdateReceivable } from '@/types'
 
 export function useReceivables(yearMonth: string) {
@@ -15,7 +16,6 @@ export function useReceivables(yearMonth: string) {
     setError(null)
     const [year, month] = ym.split('-').map(Number)
     const from = `${ym}-01`
-    // Last day of the month — day 0 of next month
     const lastDay = new Date(year, month, 0).getDate()
     const to = `${ym}-${String(lastDay).padStart(2, '0')}`
     const { data, error } = await supabase
@@ -41,7 +41,10 @@ export function useReceivables(yearMonth: string) {
       .select()
       .single()
     if (error) { setError(error.message); return null }
-    setItems(prev => [...prev, data].sort((a, b) => a.due_date.localeCompare(b.due_date)))
+    // Only add to current view if the item belongs to this month
+    if (toYearMonth(data.due_date) === yearMonth) {
+      setItems(prev => [...prev, data].sort((a, b) => a.due_date.localeCompare(b.due_date)))
+    }
     return data
   }
 
@@ -53,7 +56,12 @@ export function useReceivables(yearMonth: string) {
       .select()
       .single()
     if (error) { setError(error.message); return }
-    setItems(prev => prev.map(r => r.id === id ? data : r))
+    // If item moved to another month, remove from current view
+    if (toYearMonth(data.due_date) === yearMonth) {
+      setItems(prev => prev.map(r => r.id === id ? data : r))
+    } else {
+      setItems(prev => prev.filter(r => r.id !== id))
+    }
   }
 
   const remove = async (id: string): Promise<void> => {
@@ -72,27 +80,27 @@ export function useReceivables(yearMonth: string) {
   return { items, loading, error, add, update, remove, togglePaid, refresh: () => fetchMonth(yearMonth) }
 }
 
-// Hook for dashboard: fetches last N months
-export function useMonthlyHistory(months = 6) {
+// Dashboard hook — fetches last 24 months to support both date modes
+export function useDashboardData() {
   const supabase = createClient()
   const [data, setData] = useState<Receivable[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
-      const now = new Date()
-      const from = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1)
-      const fromStr = from.toISOString().slice(0, 10)
+      const cutoff = new Date()
+      cutoff.setMonth(cutoff.getMonth() - 24)
+      const cutoffStr = cutoff.toISOString().slice(0, 10)
       const { data: rows } = await supabase
         .from('receivables')
         .select('*')
-        .gte('due_date', fromStr)
+        .gte('due_date', cutoffStr)
         .order('due_date', { ascending: true })
       setData(rows ?? [])
       setLoading(false)
     }
     load()
-  }, [months, supabase])
+  }, [supabase])
 
   return { data, loading }
 }
