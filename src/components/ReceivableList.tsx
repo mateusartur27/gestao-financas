@@ -59,72 +59,70 @@ export default function ReceivableList({ items, onTogglePaid, onEdit, onDelete }
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={`text-sm font-semibold ${item.paid ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+              {/* Row 1: description + action buttons */}
+              <div className="flex items-start justify-between gap-2">
+                <span className={`text-sm font-semibold leading-snug ${item.paid ? 'line-through text-gray-400' : 'text-gray-900'}`}>
                   {item.description}
                 </span>
-                {item.paid ? (
-                  <span className="badge-paid">
-                    <Check size={10} /> Recebido
-                  </span>
-                ) : overdue ? (
-                  <span className="badge-overdue">
-                    <Clock size={10} /> Atrasado
-                  </span>
-                ) : (
-                  <span className="badge-pending">
-                    <Clock size={10} /> Pendente
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-1 flex flex-wrap gap-3 text-xs text-gray-500">
-                <span>Vencimento: <strong className="text-gray-700">{formatDate(item.due_date)}</strong></span>
-                {item.paid && item.paid_at && (
-                  <span>Recebido em: <strong className="text-brand-700">{formatDate(item.paid_at)}</strong></span>
-                )}
-              </div>
-            </div>
-
-            {/* Amount */}
-            <span className={`shrink-0 text-base font-bold ${item.paid ? 'text-brand-600' : overdue ? 'text-red-600' : 'text-gray-800'}`}>
-              {formatCurrency(item.amount)}
-            </span>
-
-            {/* Actions */}
-            <div className="flex shrink-0 items-center gap-1">
-              <button
-                onClick={() => onEdit(item)}
-                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                title="Editar"
-              >
-                <Pencil size={15} />
-              </button>
-
-              {confirmDeleteId === item.id ? (
-                <div className="flex items-center gap-1">
+                {/* Actions */}
+                <div className="flex shrink-0 items-center gap-0.5">
                   <button
-                    onClick={() => { onDelete(item); setConfirmDeleteId(null) }}
-                    className="rounded-lg bg-red-500 px-2 py-1 text-xs font-semibold text-white hover:bg-red-600"
+                    onClick={() => onEdit(item)}
+                    className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    title="Editar"
                   >
-                    Confirmar
+                    <Pencil size={15} />
                   </button>
-                  <button
-                    onClick={() => setConfirmDeleteId(null)}
-                    className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-50"
-                  >
-                    Não
-                  </button>
+                  {confirmDeleteId === item.id ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => { onDelete(item); setConfirmDeleteId(null) }}
+                        className="rounded-lg bg-red-500 px-2 py-1 text-xs font-semibold text-white hover:bg-red-600"
+                      >
+                        Confirmar
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                      >
+                        Não
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteId(item.id)}
+                      className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                      title="Excluir"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <button
-                  onClick={() => setConfirmDeleteId(item.id)}
-                  className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
-                  title="Excluir"
-                >
-                  <Trash2 size={15} />
-                </button>
-              )}
+              </div>
+
+              {/* Row 2: badge + dates */}
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                {item.paid ? (
+                  <span className="badge-paid"><Check size={10} /> Recebido</span>
+                ) : overdue ? (
+                  <span className="badge-overdue"><Clock size={10} /> Atrasado</span>
+                ) : (
+                  <span className="badge-pending"><Clock size={10} /> Pendente</span>
+                )}
+                <span className="text-xs text-gray-500">
+                  Vencimento: <strong className="text-gray-700">{formatDate(item.due_date)}</strong>
+                </span>
+                {item.paid && item.paid_at && (
+                  <span className="text-xs text-gray-500">
+                    Recebido em: <strong className="text-brand-700">{formatDate(item.paid_at)}</strong>
+                  </span>
+                )}
+              </div>
+
+              {/* Row 3: amount */}
+              <p className={`mt-1.5 text-base font-bold ${item.paid ? 'text-brand-600' : overdue ? 'text-red-600' : 'text-gray-800'}`}>
+                {formatCurrency(item.amount)}
+              </p>
             </div>
           </li>
         )
