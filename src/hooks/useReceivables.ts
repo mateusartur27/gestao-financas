@@ -24,7 +24,7 @@ export function useReceivables(yearMonth: string) {
       .from('receivables')
       .select('*')
       .or(`and(paid.eq.false,due_date.gte.${from},due_date.lte.${to}),and(paid.eq.true,paid_at.gte.${from},paid_at.lte.${to})`)
-      .order('due_date', { ascending: true })
+      .order('due_date', { ascending: false })
 
     if (error) setError(error.message)
     else setItems(data ?? [])
@@ -45,7 +45,7 @@ export function useReceivables(yearMonth: string) {
     // Paid items live in their paid_at month; unpaid in their due_date month
     const effectiveYM = (data.paid && data.paid_at) ? toYearMonth(data.paid_at) : toYearMonth(data.due_date)
     if (effectiveYM === yearMonth) {
-      setItems(prev => [...prev, data].sort((a, b) => a.due_date.localeCompare(b.due_date)))
+      setItems(prev => [...prev, data].sort((a, b) => b.due_date.localeCompare(a.due_date)))
     }
     return data
   }
@@ -91,13 +91,9 @@ export function useDashboardData() {
 
   useEffect(() => {
     const load = async () => {
-      const cutoff = new Date()
-      cutoff.setMonth(cutoff.getMonth() - 24)
-      const cutoffStr = cutoff.toISOString().slice(0, 10)
       const { data: rows } = await supabase
         .from('receivables')
         .select('*')
-        .gte('due_date', cutoffStr)
         .order('due_date', { ascending: true })
       setData(rows ?? [])
       setLoading(false)

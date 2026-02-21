@@ -10,16 +10,10 @@ import type { Receivable } from '@/types'
 
 const LS_KEY = 'dashboard-range'
 
-function fmtYM(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-}
+const EMPTY_RANGE = { start: '', end: '' }
 
 function defaultRange() {
-  const now = new Date()
-  return {
-    start: fmtYM(new Date(now.getFullYear(), now.getMonth() - 6, 1)),
-    end:   fmtYM(new Date(now.getFullYear(), now.getMonth() + 3, 1)),
-  }
+  return EMPTY_RANGE
 }
 
 type Status = 'a_vencer' | 'vencido' | 'pago'
@@ -45,7 +39,7 @@ export default function DashboardView() {
       const saved = localStorage.getItem(LS_KEY)
       if (saved) {
         const p = JSON.parse(saved)
-        if (p.start && p.end) setRange(p)
+        if (typeof p.start === 'string' && typeof p.end === 'string') setRange(p)
       }
     } catch { /* ignore */ }
   }, [])
@@ -53,17 +47,19 @@ export default function DashboardView() {
   const handleRange = (key: 'start' | 'end', val: string) => {
     setRange(prev => {
       const next = { ...prev, [key]: val }
-      if (key === 'start' && next.start > next.end) next.end = next.start
-      if (key === 'end'   && next.end < next.start)  next.start = next.end
+      // Enforce start <= end only when both are filled
+      if (next.start && next.end && next.start > next.end) {
+        if (key === 'start') next.end = next.start
+        else next.start = next.end
+      }
       try { localStorage.setItem(LS_KEY, JSON.stringify(next)) } catch { /* ignore */ }
       return next
     })
   }
 
   const handleReset = () => {
-    const d = defaultRange()
-    setRange(d)
-    try { localStorage.setItem(LS_KEY, JSON.stringify(d)) } catch { /* ignore */ }
+    setRange(EMPTY_RANGE)
+    try { localStorage.removeItem(LS_KEY) } catch { /* ignore */ }
   }
 
   const toggleStatus = (s: Status) => {
@@ -76,10 +72,14 @@ export default function DashboardView() {
 
   const today = new Date().toISOString().slice(0, 10)
 
-  const periodItems = useMemo(() =>
-    allItems.filter(r => r.due_date.slice(0, 7) >= range.start && r.due_date.slice(0, 7) <= range.end),
-    [allItems, range]
-  )
+  const periodItems = useMemo(() => {
+    if (!range.start && !range.end) return allItems
+    const ym = (r: Receivable) => r.due_date.slice(0, 7)
+    return allItems.filter(r =>
+      (!range.start || ym(r) >= range.start) &&
+      (!range.end   || ym(r) <= range.end)
+    )
+  }, [allItems, range])
 
   const totalPeriod  = useMemo(() => periodItems.reduce((s, r) => s + r.amount, 0), [periodItems])
   const paidPeriod   = useMemo(() => periodItems.reduce((s, r) => s + (r.paid ? r.amount : 0), 0), [periodItems])
