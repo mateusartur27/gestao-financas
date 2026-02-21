@@ -18,11 +18,12 @@ export function useReceivables(yearMonth: string) {
     const from = `${ym}-01`
     const lastDay = new Date(year, month, 0).getDate()
     const to = `${ym}-${String(lastDay).padStart(2, '0')}`
+    // Paid items → appear in the month they were paid (paid_at)
+    // Unpaid items → appear in the month of their due_date
     const { data, error } = await supabase
       .from('receivables')
       .select('*')
-      .gte('due_date', from)
-      .lte('due_date', to)
+      .or(`and(paid.eq.false,due_date.gte.${from},due_date.lte.${to}),and(paid.eq.true,paid_at.gte.${from},paid_at.lte.${to})`)
       .order('due_date', { ascending: true })
 
     if (error) setError(error.message)
@@ -41,8 +42,9 @@ export function useReceivables(yearMonth: string) {
       .select()
       .single()
     if (error) { setError(error.message); return null }
-    // Only add to current view if the item belongs to this month
-    if (toYearMonth(data.due_date) === yearMonth) {
+    // Paid items live in their paid_at month; unpaid in their due_date month
+    const effectiveYM = (data.paid && data.paid_at) ? toYearMonth(data.paid_at) : toYearMonth(data.due_date)
+    if (effectiveYM === yearMonth) {
       setItems(prev => [...prev, data].sort((a, b) => a.due_date.localeCompare(b.due_date)))
     }
     return data
@@ -56,8 +58,9 @@ export function useReceivables(yearMonth: string) {
       .select()
       .single()
     if (error) { setError(error.message); return }
-    // If item moved to another month, remove from current view
-    if (toYearMonth(data.due_date) === yearMonth) {
+    // Paid items live in their paid_at month; unpaid in their due_date month
+    const effectiveYM = (data.paid && data.paid_at) ? toYearMonth(data.paid_at) : toYearMonth(data.due_date)
+    if (effectiveYM === yearMonth) {
       setItems(prev => prev.map(r => r.id === id ? data : r))
     } else {
       setItems(prev => prev.filter(r => r.id !== id))

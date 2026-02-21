@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useDashboardData } from '@/hooks/useReceivables'
 import { formatDate, formatCurrency } from '@/lib/utils'
-import { RotateCcw, ArrowUp, ArrowDown, CheckCircle2, Clock, AlertCircle, Info } from 'lucide-react'
+import { RotateCcw, ArrowUp, ArrowDown, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 import type { Receivable } from '@/types'
 
 //  helpers 
@@ -97,15 +97,6 @@ export default function DashboardView() {
     })
   }, [periodItems, statusFilter, sortDir, today])
 
-  const latestDueDate = useMemo(() => {
-    const dates = allItems.map(r => r.due_date).filter(Boolean).sort()
-    return dates.length ? dates[dates.length - 1] : null
-  }, [allItems])
-
-  const latestPaidAt = useMemo(() => {
-    const dates = allItems.filter(r => r.paid && r.paid_at).map(r => r.paid_at!).sort()
-    return dates.length ? dates[dates.length - 1] : null
-  }, [allItems])
 
   if (loading) {
     return (
@@ -171,56 +162,31 @@ export default function DashboardView() {
         </div>
       </div>
 
-      {/* Informative dates */}
-      {(latestDueDate || latestPaidAt) && (
-        <div className="flex flex-wrap gap-3">
-          {latestDueDate && (
-            <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              <Info size={13} className="shrink-0" />
-              <span>Vencimento mais avancado: <strong>{formatDate(latestDueDate)}</strong></span>
-            </div>
-          )}
-          {latestPaidAt && (
-            <div className="flex items-center gap-2 rounded-xl bg-brand-50 px-3 py-2 text-xs text-brand-800">
-              <Info size={13} className="shrink-0" />
-              <span>Pagamento mais avancado: <strong>{formatDate(latestPaidAt)}</strong></span>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Summary cards */}
       {periodItems.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div className="card">
-            <p className="text-xs font-medium text-gray-500">Total do periodo</p>
-            <p className="mt-1 text-xl font-bold text-brand-600">{formatCurrency(totalPeriod)}</p>
-            <p className="mt-1 text-[11px] text-gray-400">{periodItems.length} lancamentos</p>
+          <div className="card text-center">
+            <p className="text-xs text-gray-500">Recebido</p>
+            <p className="mt-0.5 text-base font-bold text-green-600">{formatCurrency(paidPeriod)}</p>
           </div>
-          <div className="card">
-            <div className="flex items-center gap-1.5 mb-1">
-              <CheckCircle2 size={14} className="text-green-500" />
-              <p className="text-xs font-medium text-gray-500">Pago</p>
-            </div>
-            <p className="text-xl font-bold text-green-600">{formatCurrency(paidPeriod)}</p>
-            <p className="mt-1 text-[11px] text-gray-400">{periodItems.filter(r => r.paid).length} lancamentos</p>
-          </div>
-          <div className="card col-span-2 sm:col-span-1">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Clock size={14} className={overdueCnt > 0 ? 'text-red-500' : 'text-amber-500'} />
-              <p className="text-xs font-medium text-gray-500">Em aberto</p>
-            </div>
-            <p className={`text-xl font-bold ${overdueCnt > 0 ? 'text-red-600' : 'text-amber-600'}`}>
+          <div className="card text-center">
+            <p className="text-xs text-gray-500">Em aberto</p>
+            <p className={`mt-0.5 text-base font-bold ${overdueCnt > 0 ? 'text-red-600' : 'text-amber-600'}`}>
               {formatCurrency(openTotal)}
             </p>
             {openTotal > 0 && (
-              <div className="mt-1.5 flex gap-3 text-[10px] text-gray-400">
+              <div className="mt-1.5 flex justify-center gap-2 text-[10px] text-gray-400">
                 <span>A vencer: {formatCurrency(toReceive)}</span>
-                <span className={overdueCnt > 0 ? 'text-red-400 font-medium' : ''}>
+                <span>·</span>
+                <span className={overdueCnt > 0 ? 'text-red-400' : ''}>
                   Vencido: {formatCurrency(overdueAmt)}
                 </span>
               </div>
             )}
+          </div>
+          <div className="card text-center col-span-2 sm:col-span-1">
+            <p className="text-xs text-gray-500">Total</p>
+            <p className="mt-0.5 text-base font-bold text-gray-800">{formatCurrency(totalPeriod)}</p>
           </div>
         </div>
       )}
