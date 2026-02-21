@@ -10,17 +10,38 @@ import { format, parseISO, addMonths, subMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { NewReceivable, Receivable } from '@/types'
 
+const TEN_LS_KEY = (ym: string) => `ten-percent-checked-${ym}`
+
 export default function RecebimentosView() {
   const [yearMonth, setYearMonth] = useState(currentYearMonth())
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Receivable | null>(null)
+  const [tenChecked, setTenChecked] = useState(() => {
+    try { return localStorage.getItem(TEN_LS_KEY(currentYearMonth())) === 'true' } catch { return false }
+  })
 
   const { items, loading, error, add, update, remove, togglePaid } = useReceivables(yearMonth)
 
   const monthDate  = parseISO(`${yearMonth}-01`)
   const monthTitle = format(monthDate, 'MMMM yyyy', { locale: ptBR })
-  const prevMonth  = () => setYearMonth(format(subMonths(monthDate, 1), 'yyyy-MM'))
-  const nextMonth  = () => setYearMonth(format(addMonths(monthDate, 1), 'yyyy-MM'))
+  const prevMonth  = () => {
+    const ym = format(subMonths(monthDate, 1), 'yyyy-MM')
+    setYearMonth(ym)
+    try { setTenChecked(localStorage.getItem(TEN_LS_KEY(ym)) === 'true') } catch { setTenChecked(false) }
+  }
+  const nextMonth  = () => {
+    const ym = format(addMonths(monthDate, 1), 'yyyy-MM')
+    setYearMonth(ym)
+    try { setTenChecked(localStorage.getItem(TEN_LS_KEY(ym)) === 'true') } catch { setTenChecked(false) }
+  }
+
+  const toggleTenChecked = () => {
+    setTenChecked(prev => {
+      const next = !prev
+      try { localStorage.setItem(TEN_LS_KEY(yearMonth), String(next)) } catch { /* ignore */ }
+      return next
+    })
+  }
 
   const today         = new Date().toISOString().slice(0, 10)
   const totalMonth    = items.reduce((s, r) => s + r.amount, 0)
@@ -65,7 +86,16 @@ export default function RecebimentosView() {
           </div>
           <div className="card text-center">
             <p className="text-xs text-gray-500">10% do recebido</p>
-            <p className="mt-0.5 text-base font-bold text-purple-600">{formatCurrency(tenPercent)}</p>
+            <p className={`mt-0.5 text-base font-bold ${tenChecked ? 'text-green-600 line-through opacity-60' : 'text-purple-600'}`}>{formatCurrency(tenPercent)}</p>
+            <label className="mt-2 flex cursor-pointer items-center justify-center gap-1.5 text-[11px] text-gray-500 select-none">
+              <input
+                type="checkbox"
+                checked={tenChecked}
+                onChange={toggleTenChecked}
+                className="h-3.5 w-3.5 accent-green-600 cursor-pointer"
+              />
+              Separado
+            </label>
           </div>
           {/* Em aberto: shows total + sub-labels */}
           <div className="card text-center">
