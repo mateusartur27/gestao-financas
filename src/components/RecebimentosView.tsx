@@ -22,14 +22,15 @@ export default function RecebimentosView() {
   const prevMonth  = () => setYearMonth(format(subMonths(monthDate, 1), 'yyyy-MM'))
   const nextMonth  = () => setYearMonth(format(addMonths(monthDate, 1), 'yyyy-MM'))
 
-  const today        = new Date().toISOString().slice(0, 10)
+  const today         = new Date().toISOString().slice(0, 10)
+  const totalMonth    = items.reduce((s, r) => s + r.amount, 0)
   const receivedMonth = items.reduce((s, r) => s + (r.paid ? r.amount : 0), 0)
   const tenPercent    = receivedMonth * 0.1
   const dueItems      = items.filter(r => !r.paid && r.due_date >= today)
   const overdueItems2 = items.filter(r => !r.paid && r.due_date < today)
   const pendingAmount = dueItems.reduce((s, r) => s + r.amount, 0)
   const overdueAmount = overdueItems2.reduce((s, r) => s + r.amount, 0)
-  const overdueCount  = overdueItems2.length
+  const openAmount    = pendingAmount + overdueAmount
 
   const handleSave = async (data: NewReceivable) => {
     if (editing) await update(editing.id, data)
@@ -65,15 +66,23 @@ export default function RecebimentosView() {
             <p className="text-xs text-gray-500">10% do recebido</p>
             <p className="mt-0.5 text-base font-bold text-purple-600">{formatCurrency(tenPercent)}</p>
           </div>
+          {/* Em aberto: shows total + sub-labels */}
           <div className="card text-center">
-            <p className="text-xs text-gray-500">A vencer</p>
-            <p className="mt-0.5 text-base font-bold text-amber-600">{formatCurrency(pendingAmount)}</p>
+            <p className="text-xs text-gray-500">Em aberto</p>
+            <p className="mt-0.5 text-base font-bold text-amber-600">{formatCurrency(openAmount)}</p>
+            {openAmount > 0 && (
+              <div className="mt-1.5 flex justify-center gap-2 text-[10px] text-gray-400">
+                <span>A vencer: {formatCurrency(pendingAmount)}</span>
+                <span>·</span>
+                <span className={overdueAmount > 0 ? 'text-red-400' : ''}>
+                  Vencido: {formatCurrency(overdueAmount)}
+                </span>
+              </div>
+            )}
           </div>
           <div className="card text-center">
-            <p className="text-xs text-gray-500">Vencido{overdueCount > 0 ? ` (${overdueCount})` : ''}</p>
-            <p className={`mt-0.5 text-base font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>
-              {formatCurrency(overdueAmount)}
-            </p>
+            <p className="text-xs text-gray-500">Total</p>
+            <p className="mt-0.5 text-base font-bold text-gray-800">{formatCurrency(totalMonth)}</p>
           </div>
         </div>
       )}
