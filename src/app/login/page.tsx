@@ -78,7 +78,7 @@ export default function LoginPage() {
 
           <button type="submit" className="btn-primary w-full" disabled={loading}>
             <LogIn size={16} />
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? 'Entrando...' : 'Entrar com conta AHUB'}
           </button>
         </form>
 

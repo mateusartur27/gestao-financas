@@ -110,7 +110,7 @@ export default function RegisterPage() {
 
           <button type="submit" className="btn-primary w-full" disabled={loading}>
             <UserPlus size={16} />
-            {loading ? 'Criando...' : 'Criar conta'}
+            {loading ? 'Criando...' : 'Criar conta AHUB'}
           </button>
         </form>
 
