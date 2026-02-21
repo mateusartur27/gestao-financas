@@ -10,15 +10,6 @@ import type { Receivable } from '@/types'
 
 const LS_KEY = 'dashboard-range'
 
-// sessionStorage: persists on refresh, clears when tab/browser is closed
-
-function save(val: { start: string; end: string }) {
-  try { sessionStorage.setItem(LS_KEY, JSON.stringify(val)) } catch { /* ignore */ }
-}
-function clear() {
-  try { sessionStorage.removeItem(LS_KEY) } catch { /* ignore */ }
-}
-
 const EMPTY_RANGE = { start: '', end: '' }
 
 function defaultRange() {
@@ -45,29 +36,34 @@ export default function DashboardView() {
 
   useEffect(() => {
     try {
-      const saved = sessionStorage.getItem(LS_KEY)
+      const saved = localStorage.getItem(LS_KEY)
       if (saved) {
         const p = JSON.parse(saved)
         if (typeof p.start === 'string' && typeof p.end === 'string') setRange(p)
       }
+    } catch { /* ignore */ }
+    try {
+      const sd = sessionStorage.getItem('dashboard-sort')
+      if (sd === 'asc' || sd === 'desc') setSortDir(sd)
     } catch { /* ignore */ }
   }, [])
 
   const handleRange = (key: 'start' | 'end', val: string) => {
     setRange(prev => {
       const next = { ...prev, [key]: val }
+      // Enforce start <= end only when both are filled
       if (next.start && next.end && next.start > next.end) {
         if (key === 'start') next.end = next.start
         else next.start = next.end
       }
-      save(next)
+      try { localStorage.setItem(LS_KEY, JSON.stringify(next)) } catch { /* ignore */ }
       return next
     })
   }
 
   const handleReset = () => {
     setRange(EMPTY_RANGE)
-    clear()
+    try { localStorage.removeItem(LS_KEY) } catch { /* ignore */ }
   }
 
   const toggleStatus = (s: Status) => {
@@ -162,7 +158,11 @@ export default function DashboardView() {
           })}
           <div className="ml-auto flex items-center gap-1.5">
             <span className="text-xs font-medium text-gray-500">Ordenar:</span>
-            <button onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+            <button onClick={() => setSortDir(d => {
+              const next = d === 'asc' ? 'desc' : 'asc'
+              try { sessionStorage.setItem('dashboard-sort', next) } catch { /* ignore */ }
+              return next
+            })}
               className="btn-secondary flex items-center gap-1 text-xs px-2.5 py-1.5">
               {sortDir === 'asc' ? <><ArrowUp size={13} /> Mais antigo</> : <><ArrowDown size={13} /> Mais recente</>}
             </button>
