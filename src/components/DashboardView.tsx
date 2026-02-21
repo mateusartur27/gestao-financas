@@ -10,6 +10,15 @@ import type { Receivable } from '@/types'
 
 const LS_KEY = 'dashboard-range'
 
+// sessionStorage: persists on refresh, clears when tab/browser is closed
+
+function save(val: { start: string; end: string }) {
+  try { sessionStorage.setItem(LS_KEY, JSON.stringify(val)) } catch { /* ignore */ }
+}
+function clear() {
+  try { sessionStorage.removeItem(LS_KEY) } catch { /* ignore */ }
+}
+
 const EMPTY_RANGE = { start: '', end: '' }
 
 function defaultRange() {
@@ -36,7 +45,7 @@ export default function DashboardView() {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(LS_KEY)
+      const saved = sessionStorage.getItem(LS_KEY)
       if (saved) {
         const p = JSON.parse(saved)
         if (typeof p.start === 'string' && typeof p.end === 'string') setRange(p)
@@ -47,19 +56,18 @@ export default function DashboardView() {
   const handleRange = (key: 'start' | 'end', val: string) => {
     setRange(prev => {
       const next = { ...prev, [key]: val }
-      // Enforce start <= end only when both are filled
       if (next.start && next.end && next.start > next.end) {
         if (key === 'start') next.end = next.start
         else next.start = next.end
       }
-      try { localStorage.setItem(LS_KEY, JSON.stringify(next)) } catch { /* ignore */ }
+      save(next)
       return next
     })
   }
 
   const handleReset = () => {
     setRange(EMPTY_RANGE)
-    try { localStorage.removeItem(LS_KEY) } catch { /* ignore */ }
+    clear()
   }
 
   const toggleStatus = (s: Status) => {
