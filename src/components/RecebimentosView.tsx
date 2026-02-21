@@ -51,7 +51,8 @@ export default function RecebimentosView() {
           <p className="mt-0.5 text-sm text-gray-500">{items.length} lançamentos</p>
         </div>
         <button onClick={openNew} className="btn-primary">
-          <Plus size={16} /> Novo recebimento
+          <Plus size={16} />
+          <span className="hidden sm:inline">Novo recebimento</span>
         </button>
       </div>
 
