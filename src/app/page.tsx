@@ -8,12 +8,20 @@ import RecebimentosView from '@/components/RecebimentosView'
 import DashboardView from '@/components/DashboardView'
 import type { AppTab } from '@/types'
 
+const TAB_KEY = 'app-tab'
+
 export default function App() {
   const router = useRouter()
   const [checking, setChecking] = useState(true)
   const [tab, setTab] = useState<AppTab>('recebimentos')
 
   useEffect(() => {
+    // Restore last active tab
+    try {
+      const saved = sessionStorage.getItem(TAB_KEY)
+      if (saved === 'dashboard' || saved === 'recebimentos') setTab(saved)
+    } catch { /* ignore */ }
+
     const supabase = createClient()
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) router.replace('/login')
@@ -25,6 +33,11 @@ export default function App() {
     return () => listener.subscription.unsubscribe()
   }, [router])
 
+  const handleTabChange = (next: AppTab) => {
+    setTab(next)
+    try { sessionStorage.setItem(TAB_KEY, next) } catch { /* ignore */ }
+  }
+
   if (checking) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -35,10 +48,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar currentTab={tab} onTabChange={setTab} />
+      <Navbar currentTab={tab} onTabChange={handleTabChange} />
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
         {tab === 'recebimentos' ? <RecebimentosView /> : <DashboardView />}
       </main>
     </div>
   )
 }
+

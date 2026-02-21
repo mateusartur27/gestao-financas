@@ -27,10 +27,10 @@ export interface MonthlyStats {
 }
 
 export interface DashboardSummary {
-  totalMonth: number
-  receivedMonth: number
-  pendingMonth: number
+  totalPeriod: number
+  receivedPeriod: number
+  pendingPeriod: number
+  receivedAll: number
   overdueTotal: number
   overdueCount: number
-  tenPercent: number
 }

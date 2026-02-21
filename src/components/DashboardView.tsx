@@ -1,14 +1,15 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import { useDashboardData } from '@/hooks/useReceivables'
 import DashboardStats from '@/components/DashboardStats'
 import MonthlyChart from '@/components/MonthlyChart'
-import { currentYearMonth, isOverdue, formatDate, formatCurrency } from '@/lib/utils'
+import { isOverdue, formatDate, formatCurrency } from '@/lib/utils'
 import { AlertCircle, CalendarDays, CalendarCheck2, RotateCcw, Info } from 'lucide-react'
 import type { Receivable, DashboardSummary, DateMode } from '@/types'
 
 const LS_KEY = 'dashboard-range'
+const TAB_KEY = 'app-tab'
 
 function formatYM(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
@@ -22,20 +23,18 @@ function defaultRange(): { start: string; end: string } {
   }
 }
 
-function getItemMonth(item: Receivable, mode: DateMode): string {
+function getItemYM(item: Receivable, mode: DateMode): string {
   if (mode === 'paid_at' && item.paid && item.paid_at) {
     return item.paid_at.slice(0, 7)
   }
   return item.due_date.slice(0, 7)
 }
 
-// YYYY-MM → <input type="month"> value is already YYYY-MM, perfect
-
 export default function DashboardView() {
   const { data: allItems, loading } = useDashboardData()
-  const [dateMode, setDateMode] = useState<DateMode>('due_date')
+  // Default: filter by payment date
+  const [dateMode, setDateMode] = useState<DateMode>('paid_at')
 
-  // Range — loaded from localStorage, falls back to default
   const [range, setRange] = useState(defaultRange)
 
   useEffect(() => {
@@ -51,7 +50,6 @@ export default function DashboardView() {
   const handleRangeChange = (key: 'start' | 'end', value: string) => {
     setRange(prev => {
       const next = { ...prev, [key]: value }
-      // Keep start <= end
       if (key === 'start' && next.start > next.end) next.end = next.start
       if (key === 'end'   && next.end   < next.start) next.start = next.end
       try { localStorage.setItem(LS_KEY, JSON.stringify(next)) } catch { /* ignore */ }
@@ -65,25 +63,30 @@ export default function DashboardView() {
     try { localStorage.setItem(LS_KEY, JSON.stringify(d)) } catch { /* ignore */ }
   }
 
-  const ym = currentYearMonth()
+  // Period-filtered items (by selected dateMode and range)
+  const periodItems = useMemo(() => {
+    return allItems.filter(r => {
+      const ym = getItemYM(r, dateMode)
+      return ym >= range.start && ym <= range.end
+    })
+  }, [allItems, dateMode, range])
 
   const summary: DashboardSummary = useMemo(() => {
-    const monthItems = allItems.filter(r => getItemMonth(r, dateMode) === ym)
-    const totalMonth    = monthItems.reduce((s, r) => s + r.amount, 0)
-    const receivedMonth = monthItems.reduce((s, r) => s + (r.paid ? r.amount : 0), 0)
-    const pendingMonth  = totalMonth - receivedMonth
-    const tenPercent    = totalMonth * 0.1
-    const overdueItems  = allItems.filter(r => isOverdue(r.due_date, r.paid))
-    const overdueTotal  = overdueItems.reduce((s, r) => s + r.amount, 0)
-    return { totalMonth, receivedMonth, pendingMonth, overdueTotal, overdueCount: overdueItems.length, tenPercent }
-  }, [allItems, ym, dateMode])
+    const totalPeriod    = periodItems.reduce((s, r) => s + r.amount, 0)
+    const receivedPeriod = periodItems.reduce((s, r) => s + (r.paid ? r.amount : 0), 0)
+    const pendingPeriod  = totalPeriod - receivedPeriod
+    // Received total = all ever received, regardless of range/mode
+    const receivedAll    = allItems.reduce((s, r) => s + (r.paid ? r.amount : 0), 0)
+    const overdueItems   = allItems.filter(r => isOverdue(r.due_date, r.paid))
+    const overdueTotal   = overdueItems.reduce((s, r) => s + r.amount, 0)
+    return { totalPeriod, receivedPeriod, pendingPeriod, receivedAll, overdueTotal, overdueCount: overdueItems.length }
+  }, [allItems, periodItems])
 
   const overdueItems = useMemo(
     () => allItems.filter(r => isOverdue(r.due_date, r.paid)).slice(0, 5),
     [allItems]
   )
 
-  // Most advanced due_date and paid_at
   const latestDueDate = useMemo(() => {
     const dates = allItems.map(r => r.due_date).filter(Boolean).sort()
     return dates.length ? dates[dates.length - 1] : null
@@ -107,7 +110,7 @@ export default function DashboardView() {
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
-        <p className="mt-0.5 text-sm text-gray-500">Resumo financeiro do mês atual</p>
+        <p className="mt-0.5 text-sm text-gray-500">Resumo financeiro do perÃ­odo selecionado</p>
       </div>
 
       {/* Top filters row */}
@@ -123,7 +126,7 @@ export default function DashboardView() {
               }`}
             >
               <CalendarDays size={13} />
-              Previsão
+              PrevisÃ£o
             </button>
             <button
               onClick={() => setDateMode('paid_at')}
@@ -139,7 +142,7 @@ export default function DashboardView() {
 
         {/* Month range pickers */}
         <div>
-          <p className="mb-1.5 text-xs font-medium text-gray-500">Mês inicial</p>
+          <p className="mb-1.5 text-xs font-medium text-gray-500">MÃªs inicial</p>
           <input
             type="month"
             className="input w-36 text-sm"
@@ -150,7 +153,7 @@ export default function DashboardView() {
         </div>
 
         <div>
-          <p className="mb-1.5 text-xs font-medium text-gray-500">Mês final</p>
+          <p className="mb-1.5 text-xs font-medium text-gray-500">MÃªs final</p>
           <input
             type="month"
             className="input w-36 text-sm"
@@ -164,26 +167,26 @@ export default function DashboardView() {
         <button
           onClick={handleReset}
           className="btn-secondary flex items-center gap-1.5 text-xs"
-          title="Voltar ao padrão (−6 meses a +3 meses)"
+          title="Voltar ao padrÃ£o (âˆ’6 meses a +3 meses)"
         >
           <RotateCcw size={13} />
-          Voltar ao padrão
+          Voltar ao padrÃ£o
         </button>
       </div>
 
-      {/* Informative strip — latest dates */}
+      {/* Informative strip â€” latest dates */}
       {(latestDueDate || latestPaidAt) && (
         <div className="flex flex-wrap gap-3">
           {latestDueDate && (
             <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800">
               <Info size={13} className="shrink-0" />
-              <span>Vencimento mais avançado: <strong>{formatDate(latestDueDate)}</strong></span>
+              <span>Vencimento mais avanÃ§ado: <strong>{formatDate(latestDueDate)}</strong></span>
             </div>
           )}
           {latestPaidAt && (
             <div className="flex items-center gap-2 rounded-xl bg-brand-50 px-3 py-2 text-xs text-brand-800">
               <Info size={13} className="shrink-0" />
-              <span>Pagamento mais avançado: <strong>{formatDate(latestPaidAt)}</strong></span>
+              <span>Pagamento mais avanÃ§ado: <strong>{formatDate(latestPaidAt)}</strong></span>
             </div>
           )}
         </div>

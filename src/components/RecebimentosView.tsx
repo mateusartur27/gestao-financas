@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useReceivables } from '@/hooks/useReceivables'
 import ReceivableList from '@/components/ReceivableList'
 import ReceivableForm from '@/components/ReceivableForm'
-import { formatCurrency, currentYearMonth, isOverdue } from '@/lib/utils'
+import { formatCurrency, currentYearMonth } from '@/lib/utils'
 import { format, parseISO, addMonths, subMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { NewReceivable, Receivable } from '@/types'
@@ -22,10 +22,14 @@ export default function RecebimentosView() {
   const prevMonth  = () => setYearMonth(format(subMonths(monthDate, 1), 'yyyy-MM'))
   const nextMonth  = () => setYearMonth(format(addMonths(monthDate, 1), 'yyyy-MM'))
 
-  const totalMonth    = items.reduce((s, r) => s + r.amount, 0)
+  const today        = new Date().toISOString().slice(0, 10)
   const receivedMonth = items.reduce((s, r) => s + (r.paid ? r.amount : 0), 0)
-  const pendingMonth  = totalMonth - receivedMonth
-  const overdueCount  = items.filter(r => isOverdue(r.due_date, r.paid)).length
+  const tenPercent    = receivedMonth * 0.1
+  const dueItems      = items.filter(r => !r.paid && r.due_date >= today)
+  const overdueItems2 = items.filter(r => !r.paid && r.due_date < today)
+  const pendingAmount = dueItems.reduce((s, r) => s + r.amount, 0)
+  const overdueAmount = overdueItems2.reduce((s, r) => s + r.amount, 0)
+  const overdueCount  = overdueItems2.length
 
   const handleSave = async (data: NewReceivable) => {
     if (editing) await update(editing.id, data)
@@ -52,19 +56,23 @@ export default function RecebimentosView() {
 
       {/* Month mini-summary */}
       {items.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
-          <div className="card text-center">
-            <p className="text-xs text-gray-500">Total</p>
-            <p className="mt-0.5 text-base font-bold text-gray-900">{formatCurrency(totalMonth)}</p>
-          </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="card text-center">
             <p className="text-xs text-gray-500">Recebido</p>
-            <p className="mt-0.5 text-base font-bold text-brand-600">{formatCurrency(receivedMonth)}</p>
+            <p className="mt-0.5 text-base font-bold text-green-600">{formatCurrency(receivedMonth)}</p>
           </div>
           <div className="card text-center">
-            <p className="text-xs text-gray-500">Pendente{overdueCount > 0 ? ` (${overdueCount} atras.)` : ''}</p>
-            <p className={`mt-0.5 text-base font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-amber-600'}`}>
-              {formatCurrency(pendingMonth)}
+            <p className="text-xs text-gray-500">10% do recebido</p>
+            <p className="mt-0.5 text-base font-bold text-purple-600">{formatCurrency(tenPercent)}</p>
+          </div>
+          <div className="card text-center">
+            <p className="text-xs text-gray-500">A vencer</p>
+            <p className="mt-0.5 text-base font-bold text-amber-600">{formatCurrency(pendingAmount)}</p>
+          </div>
+          <div className="card text-center">
+            <p className="text-xs text-gray-500">Vencido{overdueCount > 0 ? ` (${overdueCount})` : ''}</p>
+            <p className={`mt-0.5 text-base font-bold ${overdueCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+              {formatCurrency(overdueAmount)}
             </p>
           </div>
         </div>

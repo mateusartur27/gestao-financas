@@ -1,42 +1,42 @@
 'use client'
 
 import { formatCurrency } from '@/lib/utils'
-import { TrendingUp, Clock, AlertCircle, CheckCircle2, Percent } from 'lucide-react'
+import { TrendingUp, Clock, AlertCircle, CheckCircle2, Wallet } from 'lucide-react'
 import type { DashboardSummary } from '@/types'
 
 interface Props { summary: DashboardSummary }
 
 export default function DashboardStats({ summary }: Props) {
-  const { totalMonth, receivedMonth, pendingMonth, overdueTotal, overdueCount, tenPercent } = summary
+  const { totalPeriod, receivedPeriod, pendingPeriod, receivedAll, overdueTotal, overdueCount } = summary
 
   const stats = [
     {
-      label: 'Total do mês',
-      value: formatCurrency(totalMonth),
+      label: 'Total do período',
+      value: formatCurrency(totalPeriod),
       icon: TrendingUp,
       color: 'text-brand-600',
       bg: 'bg-brand-50',
     },
     {
-      label: '10% do mês',
-      value: formatCurrency(tenPercent),
-      icon: Percent,
-      color: 'text-purple-600',
-      bg: 'bg-purple-50',
-    },
-    {
-      label: 'Já recebido',
-      value: formatCurrency(receivedMonth),
+      label: 'Recebido no período',
+      value: formatCurrency(receivedPeriod),
       icon: CheckCircle2,
-      color: 'text-brand-600',
-      bg: 'bg-brand-50',
+      color: 'text-green-600',
+      bg: 'bg-green-50',
     },
     {
-      label: 'A receber',
-      value: formatCurrency(pendingMonth),
+      label: 'A receber no período',
+      value: formatCurrency(pendingPeriod),
       icon: Clock,
       color: 'text-amber-600',
       bg: 'bg-amber-50',
+    },
+    {
+      label: 'Recebido total',
+      value: formatCurrency(receivedAll),
+      icon: Wallet,
+      color: 'text-brand-600',
+      bg: 'bg-brand-50',
     },
     {
       label: `Atrasados (${overdueCount})`,
@@ -61,3 +61,4 @@ export default function DashboardStats({ summary }: Props) {
     </div>
   )
 }
+
