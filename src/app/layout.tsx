@@ -15,6 +15,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR">
       <body className={`${inter.className} bg-gray-50 text-gray-900 antialiased`}>
         {children}
+        <footer className="mt-8 pb-6 text-center text-xs text-gray-400">
+          Feito por{' '}
+          <a
+            href="https://instagram.com/mateusartur__"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-gray-500 hover:text-brand-600 transition-colors"
+          >
+            @mateusartur__
+          </a>
+        </footer>
       </body>
     </html>
   )
