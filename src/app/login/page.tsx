@@ -142,13 +142,6 @@ export default function LoginPage() {
           <div>
             <div className="mb-1.5 flex items-center justify-between">
               <label className="block text-sm font-medium text-gray-700">Senha</label>
-              <button
-                type="button"
-                className="text-xs font-medium text-gray-500 hover:text-brand-600 transition"
-                onClick={() => switchMode('forgot')}
-              >
-                Esqueceu a senha?
-              </button>
             </div>
             <div className="relative">
               <input
@@ -165,6 +158,15 @@ export default function LoginPage() {
                 onClick={() => setShowPass(v => !v)}
               >
                 {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            <div className="mt-1 flex justify-end">
+              <button
+                type="button"
+                className="text-xs font-medium text-gray-500 hover:text-brand-600 transition"
+                onClick={() => switchMode('forgot')}
+              >
+                Esqueceu a senha?
               </button>
             </div>
           </div>
