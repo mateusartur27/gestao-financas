@@ -16,7 +16,6 @@ export default function App() {
   const router = useRouter()
   const [checking, setChecking] = useState(true)
   const [tab, setTab] = useState<AppTab>('recebimentos')
-  const [showRecoveryModal, setShowRecoveryModal] = useState(false)
 
   useEffect(() => {
     // Restore last active tab
@@ -36,9 +35,6 @@ export default function App() {
     })
     
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setShowRecoveryModal(true)
-      }
       if (event === 'SIGNED_OUT') {
         router.replace('/login')
       } else if (session) {
@@ -67,10 +63,6 @@ export default function App() {
       <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
         {tab === 'recebimentos' ? <RecebimentosView /> : <DashboardView />}
       </main>
-      
-      {showRecoveryModal && (
-        <ChangePasswordModal onClose={() => setShowRecoveryModal(false)} />
-      )}
     </div>
   )
 }
