@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Eye, EyeOff, KeyRound, Loader2, Check } from 'lucide-react'
+import { Eye, EyeOff, KeyRound, Loader2, Check, ArrowLeft } from 'lucide-react'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -13,18 +13,46 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [checkingHash, setCheckingHash] = useState(true)
+  const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    // Wait for supabase to parse the hash
     const supabase = createClient()
-    supabase.auth.getSession().then(({ data }) => {
-      setCheckingHash(false)
-      if (!data.session && !window.location.hash.includes('access_token')) {
-        // If there's no session and no hash, they shouldn't be here
-        router.replace('/login')
+    
+    // Function to confirm we have the right context to reset password
+    const checkContext = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      // If we already have a session, we're good
+      if (session) {
+        setChecking(false)
+        return
       }
-    })
+
+      // If no session, wait for onAuthStateChange to process the hash/code
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY' || session) {
+          setChecking(false)
+          subscription.unsubscribe()
+        }
+      })
+
+      // Security timeout: if no session/recovery found in 5 seconds, it's likely an invalid access
+      const timeout = setTimeout(() => {
+        subscription.unsubscribe()
+        // If we still have no session after 5s, redirect to login
+        supabase.auth.getSession().then(({ data }) => {
+          if (!data.session) router.replace('/login')
+          else setChecking(false)
+        })
+      }, 5000)
+
+      return () => {
+        clearTimeout(timeout)
+        subscription.unsubscribe()
+      }
+    }
+
+    checkContext()
   }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,28 +70,39 @@ export default function ResetPasswordPage() {
     }
 
     setLoading(true)
-
     const supabase = createClient()
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    })
+    
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      })
 
-    if (error) {
-      setError(error.message)
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+        return
+      }
+
+      setSuccess(true)
+      // Logout to force login with new password
+      await supabase.auth.signOut()
+      
+      setTimeout(() => {
+        router.replace('/login')
+      }, 3000)
+    } catch (err: any) {
+      setError(err.message || 'Erro ao atualizar senha')
       setLoading(false)
-      return
     }
-
-    setSuccess(true)
-    setTimeout(() => {
-      router.replace('/login')
-    }, 2500)
   }
 
-  if (checkingHash) {
+  if (checking) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" />
+        <div className="text-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-600 border-t-transparent mx-auto" />
+          <p className="mt-4 text-gray-600 font-medium">Validando link de recuperação...</p>
+        </div>
       </div>
     )
   }
@@ -80,28 +119,35 @@ export default function ResetPasswordPage() {
         </div>
 
         {success ? (
-          <div className="card text-center space-y-4 py-8">
+          <div className="card text-center space-y-4 py-8 shadow-xl border-green-100">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-600">
               <Check size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-gray-900">Senha alterada!</h3>
-              <p className="text-sm text-gray-500 mt-1">
-                Você será redirecionado para o login.
+              <h3 className="text-lg font-bold text-gray-900">Senha Alterada!</h3>
+              <p className="text-sm text-gray-500 mt-2 px-6">
+                Sua senha foi atualizada em todos os apps AHUB. Use as novas credenciais para entrar.
               </p>
+            </div>
+            <div className="pt-4 px-6">
+              <button onClick={() => router.replace('/login')} className="btn-primary w-full">
+                Ir para o Login
+              </button>
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="card space-y-4">
+          <form onSubmit={handleSubmit} className="card space-y-5 shadow-xl border-gray-100">
             {error && (
-              <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+              <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
             )}
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">Nova senha</label>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Digite sua nova senha</label>
               <div className="relative">
                 <input
-                  className="input pr-10"
+                  className="input pr-10 focus:ring-2 focus:ring-brand-500"
                   type={showPassword ? 'text' : 'password'}
                   required
                   minLength={6}
@@ -112,18 +158,18 @@ export default function ResetPasswordPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-600 transition-colors"
                   onClick={() => setShowPassword(v => !v)}
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">Confirmar senha</label>
+              <label className="mb-1.5 block text-sm font-semibold text-gray-700">Confirme a nova senha</label>
               <input
-                className="input"
+                className="input focus:ring-2 focus:ring-brand-500"
                 type={showPassword ? 'text' : 'password'}
                 required
                 minLength={6}
@@ -133,9 +179,18 @@ export default function ResetPasswordPage() {
               />
             </div>
 
-            <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-              {loading ? 'Salvando...' : 'Salvar nova senha'}
+            <button type="submit" className="btn-primary w-full h-11" disabled={loading}>
+              {loading ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
+              {loading ? 'Processando...' : 'Atualizar Minha Senha'}
+            </button>
+
+            <button 
+              type="button"
+              onClick={() => router.replace('/login')}
+              className="flex w-full items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors pt-2"
+            >
+              <ArrowLeft size={16} />
+              Cancelar e voltar
             </button>
           </form>
         )}
