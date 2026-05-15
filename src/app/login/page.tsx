@@ -3,20 +3,32 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Eye, EyeOff, LogIn } from 'lucide-react'
+import { Eye, EyeOff, LogIn, Mail, ArrowLeft } from 'lucide-react'
+
+type AuthMode = 'login' | 'forgot'
 
 export default function LoginPage() {
   const router = useRouter()
+  const [mode, setMode] = useState<AuthMode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  const switchMode = (newMode: AuthMode) => {
+    setMode(newMode)
+    setError(null)
+    setSuccess(null)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setSuccess(null)
+    
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
@@ -25,6 +37,78 @@ export default function LoginPage() {
       return
     }
     router.replace('/')
+  }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    setSuccess(null)
+
+    const supabase = createClient()
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    })
+
+    if (error) {
+      setError(error.message)
+    } else {
+      setSuccess(
+        'Se esse email estiver cadastrado, você receberá um link para redefinir sua senha. Verifique sua caixa de entrada.'
+      )
+    }
+    setLoading(false)
+  }
+
+  if (mode === 'forgot') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 to-white p-4">
+        <div className="w-full max-w-sm">
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 shadow-lg">
+              <span className="text-2xl font-bold text-white">R$</span>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900">Gestão de Finanças</h1>
+            <p className="mt-1 text-sm text-gray-500">Recuperar senha da conta AHUB</p>
+          </div>
+
+          <form onSubmit={handleForgotPassword} className="card space-y-4">
+            {error && (
+              <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+            )}
+            {success && (
+              <div className="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-700">{success}</div>
+            )}
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">E-mail da sua conta</label>
+              <input
+                className="input"
+                type="email"
+                required
+                placeholder="seu@email.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <button type="submit" className="btn-primary w-full" disabled={loading}>
+              <Mail size={16} />
+              {loading ? 'Enviando...' : 'Enviar link de recuperação'}
+            </button>
+          </form>
+
+          <button 
+            className="mt-4 flex w-full items-center justify-center gap-2 text-sm text-gray-600 hover:text-brand-600 transition"
+            onClick={() => switchMode('login')}
+          >
+            <ArrowLeft size={16} />
+            Voltar ao login
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -56,7 +140,16 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">Senha</label>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="block text-sm font-medium text-gray-700">Senha</label>
+              <button
+                type="button"
+                className="text-xs font-medium text-gray-500 hover:text-brand-600 transition"
+                onClick={() => switchMode('forgot')}
+              >
+                Esqueceu a senha?
+              </button>
+            </div>
             <div className="relative">
               <input
                 className="input pr-10"
