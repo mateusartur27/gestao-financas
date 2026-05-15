@@ -24,11 +24,20 @@ export default function App() {
 
     const supabase = createClient()
     supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) router.replace('/login')
-      else setChecking(false)
+      // If we don't have a session, but there's a recovery hash, wait for it to be processed
+      if (!data.session && !window.location.hash.includes('access_token')) {
+        router.replace('/login')
+      } else if (data.session) {
+        setChecking(false)
+      }
     })
-    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') router.replace('/login')
+    
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        router.replace('/login')
+      } else if (session) {
+        setChecking(false)
+      }
     })
     return () => listener.subscription.unsubscribe()
   }, [router])
